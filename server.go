@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"html/template"
 	"net/http"
 	"os"
@@ -75,7 +76,25 @@ func (s *server) index(w http.ResponseWriter, r *http.Request) {
 		SiteTitle: "Markdown Server",
 		Items:     cat.sidebar(""),
 		Body:      template.HTML(b.String()),
-		Scripts:   template.HTML(reloadScript),
+		Scripts:   pageScripts(),
+	})
+}
+
+// handleSearch serves JSON full-text search results.
+func (s *server) handleSearch(w http.ResponseWriter, r *http.Request) {
+	q := r.URL.Query().Get("q")
+	cat, err := buildCatalog(s.dir)
+	if err != nil {
+		writeJSONError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	results := searchCatalog(cat, q, 20)
+
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.Header().Set("Cache-Control", "no-store")
+	json.NewEncoder(w).Encode(map[string]any{
+		"query":   q,
+		"results": results,
 	})
 }
 
@@ -90,8 +109,15 @@ func (s *server) render(w http.ResponseWriter, title, route string, body []byte)
 		SiteTitle: "Markdown Server",
 		Items:     items,
 		Body:      template.HTML(body),
-		Scripts:   template.HTML(reloadScript),
+		Scripts:   pageScripts(),
 	})
+}
+
+// writeJSONError writes a JSON error payload.
+func writeJSONError(w http.ResponseWriter, status int, msg string) {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(status)
+	json.NewEncoder(w).Encode(map[string]string{"error": msg})
 }
 
 // within reports whether target resolves inside root, following symlinks.

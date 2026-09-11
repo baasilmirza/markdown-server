@@ -18,6 +18,7 @@ func main() {
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("/ws", h.handleWS)
+	mux.HandleFunc("/__search", s.handleSearch)
 	mux.HandleFunc("/", s.handle)
 
 	log.Printf("serving %s at http://localhost%s", *dir, *addr)
