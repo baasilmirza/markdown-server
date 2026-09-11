@@ -64,6 +64,27 @@ body {
 .tree-file.active { background: rgba(127,127,127,.25); font-weight: 600; }
 .content { flex: 1 1 auto; min-width: 0; }
 article { max-width: 46rem; margin: 0 auto; padding: 2rem 1rem; }
+.doc-nav {
+  max-width: 46rem;
+  margin: 0 auto;
+  padding: 0 1rem 3rem;
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+}
+.doc-nav a {
+  color: inherit;
+  text-decoration: none;
+  border: 1px solid rgba(127,127,127,.35);
+  border-radius: 6px;
+  padding: .5rem .8rem;
+  max-width: 45%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.doc-nav a:hover { background: rgba(127,127,127,.15); }
+.doc-nav .nav-next { margin-left: auto; text-align: right; }
 pre { background: rgba(127,127,127,.15); padding: 1rem; overflow-x: auto; border-radius: 6px; }
 code { background: rgba(127,127,127,.15); padding: .1em .3em; border-radius: 4px; }
 pre code { background: none; padding: 0; }
@@ -92,6 +113,10 @@ blockquote { border-left: 3px solid rgba(127,127,127,.5); margin-left: 0; paddin
   </aside>
   <main class="content">
     <article id="content">{{.Body}}</article>
+    <nav class="doc-nav">
+      {{if .Prev}}<a class="nav-prev" href="{{.Prev.URL}}">&larr; {{.Prev.Title}}</a>{{end}}
+      {{if .Next}}<a class="nav-next" href="{{.Next.URL}}">{{.Next.Title}} &rarr;</a>{{end}}
+    </nav>
   </main>
 </div>
 {{.Scripts}}

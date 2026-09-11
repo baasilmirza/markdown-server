@@ -28,6 +28,8 @@ type pageData struct {
 	SiteTitle string
 	Items     []sidebarItem
 	Body      template.HTML
+	Prev      *doc
+	Next      *doc
 	Scripts   template.HTML
 }
 
@@ -42,7 +44,7 @@ func renderPage(w http.ResponseWriter, data pageData) {
 
 // pageScripts returns the scripts injected into every page.
 func pageScripts() template.HTML {
-	return template.HTML(reloadScript + searchScript)
+	return template.HTML(reloadScript + searchScript + navScript)
 }
 
 const reloadScript = `<script>
@@ -109,6 +111,22 @@ const searchScript = `<script>
       e.preventDefault();
       input.focus();
     }
+  });
+})();
+</script>`
+
+const navScript = `<script>
+(function () {
+  document.addEventListener('keydown', function (e) {
+    var tag = e.target && e.target.tagName;
+    if (tag === 'INPUT' || tag === 'TEXTAREA') return;
+    var link = null;
+    if (e.key === 'ArrowLeft' || e.key === 'k') {
+      link = document.querySelector('a.nav-prev');
+    } else if (e.key === 'ArrowRight' || e.key === 'j') {
+      link = document.querySelector('a.nav-next');
+    }
+    if (link) { location.href = link.getAttribute('href'); }
   });
 })();
 </script>`

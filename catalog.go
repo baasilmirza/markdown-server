@@ -159,6 +159,25 @@ func (c *catalog) lookup(rel string) (doc, bool) {
 	return d, ok
 }
 
+// neighbors returns the documents before and after route in flat order.
+func (c *catalog) neighbors(route string) (prev, next *doc) {
+	for i, d := range c.docs {
+		if d.Route != route {
+			continue
+		}
+		if i > 0 {
+			p := c.docs[i-1]
+			prev = &p
+		}
+		if i+1 < len(c.docs) {
+			n := c.docs[i+1]
+			next = &n
+		}
+		return
+	}
+	return
+}
+
 // routeURL escapes each path segment of a route for use in an href.
 func routeURL(route string) string {
 	if route == "" {

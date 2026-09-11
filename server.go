@@ -98,17 +98,21 @@ func (s *server) handleSearch(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-// render writes a document page with the recursive sidebar.
+// render writes a document page with the recursive sidebar and prev/next links.
 func (s *server) render(w http.ResponseWriter, title, route string, body []byte) {
 	var items []sidebarItem
+	var prev, next *doc
 	if cat, err := buildCatalog(s.dir); err == nil {
 		items = cat.sidebar(route)
+		prev, next = cat.neighbors(route)
 	}
 	renderPage(w, pageData{
 		Title:     title,
 		SiteTitle: "Markdown Server",
 		Items:     items,
 		Body:      template.HTML(body),
+		Prev:      prev,
+		Next:      next,
 		Scripts:   pageScripts(),
 	})
 }
