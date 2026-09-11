@@ -193,27 +193,37 @@ func writeJSONError(w http.ResponseWriter, status int, msg string) {
 
 // within reports whether target resolves inside root, following symlinks.
 func within(root, target string) bool {
-	rootAbs, err := filepath.Abs(root)
-	if err != nil {
-		return false
-	}
-	if resolved, err := filepath.EvalSymlinks(rootAbs); err == nil {
-		rootAbs = resolved
-	}
-
-	targetAbs, err := filepath.Abs(target)
-	if err != nil {
-		return false
-	}
-	if resolved, err := filepath.EvalSymlinks(targetAbs); err == nil {
-		targetAbs = resolved
-	} else if resolved, err := filepath.EvalSymlinks(filepath.Dir(targetAbs)); err == nil {
-		targetAbs = filepath.Join(resolved, filepath.Base(targetAbs))
-	}
+	rootAbs := resolvePath(root)
+	targetAbs := resolvePath(target)
 
 	rel, err := filepath.Rel(rootAbs, targetAbs)
 	if err != nil {
 		return false
 	}
 	return rel != ".." && !strings.HasPrefix(rel, ".."+string(filepath.Separator))
+}
+
+// resolvePath returns an absolute path with symlinks in its existing prefix
+// resolved. Missing trailing elements are appended unchanged.
+func resolvePath(p string) string {
+	abs, err := filepath.Abs(p)
+	if err != nil {
+		return p
+	}
+	rest := ""
+	cur := abs
+	for {
+		if resolved, err := filepath.EvalSymlinks(cur); err == nil {
+			if rest == "" {
+				return resolved
+			}
+			return filepath.Join(resolved, rest)
+		}
+		parent := filepath.Dir(cur)
+		if parent == cur {
+			return abs
+		}
+		rest = filepath.Join(filepath.Base(cur), rest)
+		cur = parent
+	}
 }
