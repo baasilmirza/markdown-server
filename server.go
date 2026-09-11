@@ -3,11 +3,9 @@ package main
 import (
 	"html/template"
 	"net/http"
-	"net/url"
 	"os"
 	"path"
 	"path/filepath"
-	"sort"
 	"strings"
 )
 
@@ -48,55 +46,74 @@ func (s *server) handle(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	route := strings.TrimSuffix(filepath.ToSlash(rel), filepath.Ext(rel))
 	title := strings.TrimSuffix(filepath.Base(full), ".md")
-	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	w.Header().Set("Cache-Control", "no-store")
-	w.Write(page(title, body))
+	s.render(w, title, route, body)
 }
 
 func (s *server) index(w http.ResponseWriter, r *http.Request) {
-	entries, err := os.ReadDir(s.dir)
+	cat, err := buildCatalog(s.dir)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	var names []string
-	for _, e := range entries {
-		if !e.IsDir() && strings.EqualFold(filepath.Ext(e.Name()), ".md") {
-			names = append(names, e.Name())
-		}
-	}
-	sort.Strings(names)
-
 	var b strings.Builder
 	b.WriteString("<h1>Markdown files</h1>\n")
-	if len(names) == 0 {
+	if len(cat.docs) == 0 {
 		b.WriteString("<p>No .md files found.</p>")
 	} else {
 		b.WriteString("<ul>\n")
-		for _, n := range names {
-			href := "/" + url.PathEscape(strings.TrimSuffix(n, filepath.Ext(n)))
-			b.WriteString(`<li><a href="` + href + `">` + template.HTMLEscapeString(n) + "</a></li>\n")
+		for _, d := range cat.docs {
+			b.WriteString(`<li><a href="` + d.URL + `">` + template.HTMLEscapeString(d.Rel) + "</a></li>\n")
 		}
 		b.WriteString("</ul>\n")
 	}
 
-	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	w.Header().Set("Cache-Control", "no-store")
-	w.Write(page("Markdown files", []byte(b.String())))
+	renderPage(w, pageData{
+		Title:     "Markdown files",
+		SiteTitle: "Markdown Server",
+		Items:     cat.sidebar(""),
+		Body:      template.HTML(b.String()),
+		Scripts:   template.HTML(reloadScript),
+	})
 }
 
-// within reports whether target resolves inside root.
+// render writes a document page with the recursive sidebar.
+func (s *server) render(w http.ResponseWriter, title, route string, body []byte) {
+	var items []sidebarItem
+	if cat, err := buildCatalog(s.dir); err == nil {
+		items = cat.sidebar(route)
+	}
+	renderPage(w, pageData{
+		Title:     title,
+		SiteTitle: "Markdown Server",
+		Items:     items,
+		Body:      template.HTML(body),
+		Scripts:   template.HTML(reloadScript),
+	})
+}
+
+// within reports whether target resolves inside root, following symlinks.
 func within(root, target string) bool {
 	rootAbs, err := filepath.Abs(root)
 	if err != nil {
 		return false
 	}
+	if resolved, err := filepath.EvalSymlinks(rootAbs); err == nil {
+		rootAbs = resolved
+	}
+
 	targetAbs, err := filepath.Abs(target)
 	if err != nil {
 		return false
 	}
+	if resolved, err := filepath.EvalSymlinks(targetAbs); err == nil {
+		targetAbs = resolved
+	} else if resolved, err := filepath.EvalSymlinks(filepath.Dir(targetAbs)); err == nil {
+		targetAbs = filepath.Join(resolved, filepath.Base(targetAbs))
+	}
+
 	rel, err := filepath.Rel(rootAbs, targetAbs)
 	if err != nil {
 		return false

@@ -2,7 +2,8 @@ package main
 
 import (
 	"bytes"
-	"fmt"
+	"html/template"
+	"net/http"
 
 	"github.com/yuin/goldmark"
 	"github.com/yuin/goldmark/extension"
@@ -21,35 +22,23 @@ func renderMarkdown(src []byte) ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
-const pageTemplate = `<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>%s</title>
-<style>
-:root { color-scheme: light dark; }
-body {
-  max-width: 46rem;
-  margin: 0 auto;
-  padding: 2rem 1rem;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-  line-height: 1.6;
+// pageData is the input to the page template.
+type pageData struct {
+	Title     string
+	SiteTitle string
+	Items     []sidebarItem
+	Body      template.HTML
+	Scripts   template.HTML
 }
-pre { background: rgba(127,127,127,.15); padding: 1rem; overflow-x: auto; border-radius: 6px; }
-code { background: rgba(127,127,127,.15); padding: .1em .3em; border-radius: 4px; }
-pre code { background: none; padding: 0; }
-table { border-collapse: collapse; }
-th, td { border: 1px solid rgba(127,127,127,.4); padding: .4rem .7rem; }
-blockquote { border-left: 3px solid rgba(127,127,127,.5); margin-left: 0; padding-left: 1rem; color: inherit; }
-</style>
-</head>
-<body>
-%s
-%s
-</body>
-</html>
-`
+
+// renderPage writes the full HTML document for data.
+func renderPage(w http.ResponseWriter, data pageData) {
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	w.Header().Set("Cache-Control", "no-store")
+	if err := pageTmpl.ExecuteTemplate(w, "page", data); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+}
 
 const reloadScript = `<script>
 (function () {
@@ -64,10 +53,3 @@ const reloadScript = `<script>
   connect();
 })();
 </script>`
-
-// page wraps a rendered markdown fragment in the HTML document shell.
-func page(title string, body []byte) []byte {
-	var buf bytes.Buffer
-	buf.WriteString(fmt.Sprintf(pageTemplate, title, body, reloadScript))
-	return buf.Bytes()
-}
