@@ -26,6 +26,8 @@ func renderMarkdown(src []byte) ([]byte, error) {
 type pageData struct {
 	Title     string
 	SiteTitle string
+	Rel       string
+	Edit      bool
 	Items     []sidebarItem
 	Body      template.HTML
 	Prev      *doc

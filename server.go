@@ -11,7 +11,8 @@ import (
 )
 
 type server struct {
-	dir string
+	dir  string
+	edit bool
 }
 
 func (s *server) handle(w http.ResponseWriter, r *http.Request) {
@@ -125,6 +126,8 @@ func (s *server) render(w http.ResponseWriter, title, route string, body []byte)
 	renderPage(w, pageData{
 		Title:     title,
 		SiteTitle: "Markdown Server",
+		Rel:       route + ".md",
+		Edit:      s.edit,
 		Items:     items,
 		Body:      template.HTML(body),
 		Prev:      prev,

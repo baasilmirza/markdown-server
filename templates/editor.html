@@ -1,0 +1,149 @@
+{{define "editor"}}<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Edit {{.Title}}</title>
+<script>
+(function () {
+  try {
+    var t = localStorage.getItem('theme');
+    if (t !== 'light' && t !== 'dark') {
+      t = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    }
+    document.documentElement.setAttribute('data-theme', t);
+  } catch (e) {}
+})();
+</script>
+<style>
+:root {
+  color-scheme: light;
+  --bg: #ffffff;
+  --fg: #1a1a1a;
+  --muted: rgba(0,0,0,.07);
+  --border: rgba(0,0,0,.16);
+  --hover: rgba(0,0,0,.06);
+}
+html[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #14161a;
+  --fg: #e6e6e6;
+  --muted: rgba(255,255,255,.09);
+  --border: rgba(255,255,255,.18);
+  --hover: rgba(255,255,255,.08);
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--fg);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  line-height: 1.6;
+}
+.ed-head {
+  display: flex;
+  align-items: center;
+  gap: .8rem;
+  padding: .5rem .8rem;
+  border-bottom: 1px solid var(--border);
+  height: 3rem;
+}
+.ed-head a { color: inherit; text-decoration: none; }
+.ed-head a:hover { text-decoration: underline; }
+.ed-title { font-weight: 600; }
+.status { opacity: .7; font-size: .9em; margin-left: auto; }
+.ed-head button {
+  padding: .3rem .8rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+.ed-head button:hover { background: var(--hover); }
+.ed-main { display: flex; height: calc(100vh - 3rem); }
+#src {
+  flex: 1 1 50%;
+  width: 50%;
+  border: 0;
+  border-right: 1px solid var(--border);
+  padding: 1rem;
+  resize: none;
+  background: transparent;
+  color: inherit;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: .95rem;
+  line-height: 1.5;
+  outline: none;
+}
+.preview {
+  flex: 1 1 50%;
+  width: 50%;
+  overflow-y: auto;
+  padding: 1rem 1.5rem;
+}
+.preview pre { background: var(--muted); padding: 1rem; overflow-x: auto; border-radius: 6px; }
+.preview code { background: var(--muted); padding: .1em .3em; border-radius: 4px; }
+.preview pre code { background: none; padding: 0; }
+.preview table { border-collapse: collapse; }
+.preview th, .preview td { border: 1px solid var(--border); padding: .4rem .7rem; }
+.preview blockquote { border-left: 3px solid var(--border); margin-left: 0; padding-left: 1rem; }
+</style>
+</head>
+<body>
+<header class="ed-head">
+  <a href="{{.URL}}">&larr; Back</a>
+  <span class="ed-title">{{.Title}}</span>
+  <span id="status" class="status"></span>
+  <button id="save" type="button">Save</button>
+</header>
+<main class="ed-main">
+  <textarea id="src" data-rel="{{.Rel}}" spellcheck="false">{{.Content}}</textarea>
+  <div id="preview" class="preview"></div>
+</main>
+<script>
+(function () {
+  var ta = document.getElementById('src');
+  var preview = document.getElementById('preview');
+  var status = document.getElementById('status');
+  var rel = ta.getAttribute('data-rel');
+  var timer = null;
+
+  function render() {
+    fetch('/__render', { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: ta.value })
+      .then(function (r) { return r.text(); })
+      .then(function (html) { preview.innerHTML = html; })
+      .catch(function () {});
+  }
+  function save() {
+    status.textContent = 'Saving...';
+    fetch('/__save?p=' + encodeURIComponent(rel), {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain' },
+      body: ta.value
+    })
+      .then(function (r) { if (!r.ok) { throw new Error('save'); } return r.json(); })
+      .then(function () {
+        status.textContent = 'Saved';
+        setTimeout(function () { status.textContent = ''; }, 1500);
+      })
+      .catch(function () { status.textContent = 'Save failed'; });
+  }
+
+  ta.addEventListener('input', function () {
+    clearTimeout(timer);
+    timer = setTimeout(render, 200);
+  });
+  document.addEventListener('keydown', function (e) {
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') {
+      e.preventDefault();
+      save();
+    }
+  });
+  document.getElementById('save').addEventListener('click', save);
+  render();
+})();
+</script>
+</body>
+</html>{{end}}
