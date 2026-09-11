@@ -44,7 +44,7 @@ func renderPage(w http.ResponseWriter, data pageData) {
 
 // pageScripts returns the scripts injected into every page.
 func pageScripts() template.HTML {
-	return template.HTML(reloadScript + searchScript + navScript)
+	return template.HTML(reloadScript + searchScript + navScript + themeScript)
 }
 
 const reloadScript = `<script>
@@ -128,5 +128,25 @@ const navScript = `<script>
     }
     if (link) { location.href = link.getAttribute('href'); }
   });
+})();
+</script>`
+
+const themeScript = `<script>
+(function () {
+  var btn = document.getElementById('theme-toggle');
+  if (!btn) return;
+  function current() {
+    return document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'light';
+  }
+  function label() {
+    btn.textContent = current() === 'dark' ? 'Light mode' : 'Dark mode';
+  }
+  btn.addEventListener('click', function () {
+    var next = current() === 'dark' ? 'light' : 'dark';
+    document.documentElement.setAttribute('data-theme', next);
+    try { localStorage.setItem('theme', next); } catch (e) {}
+    label();
+  });
+  label();
 })();
 </script>`

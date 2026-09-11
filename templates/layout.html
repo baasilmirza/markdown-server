@@ -4,11 +4,41 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>{{.Title}}</title>
+<script>
+(function () {
+  try {
+    var t = localStorage.getItem('theme');
+    if (t !== 'light' && t !== 'dark') {
+      t = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    }
+    document.documentElement.setAttribute('data-theme', t);
+  } catch (e) {}
+})();
+</script>
 <style>
-:root { color-scheme: light dark; }
+:root {
+  color-scheme: light;
+  --bg: #ffffff;
+  --fg: #1a1a1a;
+  --muted: rgba(0,0,0,.07);
+  --border: rgba(0,0,0,.16);
+  --hover: rgba(0,0,0,.06);
+  --active: rgba(0,0,0,.1);
+}
+html[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #14161a;
+  --fg: #e6e6e6;
+  --muted: rgba(255,255,255,.09);
+  --border: rgba(255,255,255,.18);
+  --hover: rgba(255,255,255,.08);
+  --active: rgba(255,255,255,.14);
+}
 * { box-sizing: border-box; }
 body {
   margin: 0;
+  background: var(--bg);
+  color: var(--fg);
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   line-height: 1.6;
 }
@@ -16,20 +46,30 @@ body {
 .sidebar {
   width: 18rem;
   flex: 0 0 18rem;
-  border-right: 1px solid rgba(127,127,127,.3);
+  border-right: 1px solid var(--border);
   padding: 1rem .5rem;
   overflow-y: auto;
   height: 100vh;
   position: sticky;
   top: 0;
 }
-.sidebar-head { padding: .25rem .5rem 1rem; }
+.sidebar-head { padding: .25rem .5rem 1rem; display: flex; flex-direction: column; gap: .5rem; }
 .brand { font-weight: 600; text-decoration: none; color: inherit; }
+.theme-toggle {
+  align-self: flex-start;
+  padding: .3rem .6rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+.theme-toggle:hover { background: var(--hover); }
 .search {
   width: 100%;
-  margin-top: .6rem;
   padding: .4rem .6rem;
-  border: 1px solid rgba(127,127,127,.4);
+  border: 1px solid var(--border);
   border-radius: 6px;
   background: transparent;
   color: inherit;
@@ -40,13 +80,12 @@ body {
   flex-direction: column;
   max-height: 50vh;
   overflow-y: auto;
-  border: 1px solid rgba(127,127,127,.3);
+  border: 1px solid var(--border);
   border-radius: 6px;
-  margin-top: .4rem;
 }
-.search-hit { padding: .4rem .6rem; text-decoration: none; color: inherit; border-bottom: 1px solid rgba(127,127,127,.15); }
+.search-hit { padding: .4rem .6rem; text-decoration: none; color: inherit; border-bottom: 1px solid var(--border); }
 .search-hit:last-child { border-bottom: 0; }
-.search-hit:hover { background: rgba(127,127,127,.15); }
+.search-hit:hover { background: var(--hover); }
 .search-title { font-weight: 600; }
 .search-snippet { font-size: .85em; opacity: .75; }
 .tree { display: flex; flex-direction: column; }
@@ -60,8 +99,8 @@ body {
   overflow: hidden;
   text-overflow: ellipsis;
 }
-.tree-file:hover { background: rgba(127,127,127,.15); }
-.tree-file.active { background: rgba(127,127,127,.25); font-weight: 600; }
+.tree-file:hover { background: var(--hover); }
+.tree-file.active { background: var(--active); font-weight: 600; }
 .content { flex: 1 1 auto; min-width: 0; }
 article { max-width: 46rem; margin: 0 auto; padding: 2rem 1rem; }
 .doc-nav {
@@ -75,7 +114,7 @@ article { max-width: 46rem; margin: 0 auto; padding: 2rem 1rem; }
 .doc-nav a {
   color: inherit;
   text-decoration: none;
-  border: 1px solid rgba(127,127,127,.35);
+  border: 1px solid var(--border);
   border-radius: 6px;
   padding: .5rem .8rem;
   max-width: 45%;
@@ -83,17 +122,17 @@ article { max-width: 46rem; margin: 0 auto; padding: 2rem 1rem; }
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.doc-nav a:hover { background: rgba(127,127,127,.15); }
+.doc-nav a:hover { background: var(--hover); }
 .doc-nav .nav-next { margin-left: auto; text-align: right; }
-pre { background: rgba(127,127,127,.15); padding: 1rem; overflow-x: auto; border-radius: 6px; }
-code { background: rgba(127,127,127,.15); padding: .1em .3em; border-radius: 4px; }
+pre { background: var(--muted); padding: 1rem; overflow-x: auto; border-radius: 6px; }
+code { background: var(--muted); padding: .1em .3em; border-radius: 4px; }
 pre code { background: none; padding: 0; }
 table { border-collapse: collapse; }
-th, td { border: 1px solid rgba(127,127,127,.4); padding: .4rem .7rem; }
-blockquote { border-left: 3px solid rgba(127,127,127,.5); margin-left: 0; padding-left: 1rem; color: inherit; }
+th, td { border: 1px solid var(--border); padding: .4rem .7rem; }
+blockquote { border-left: 3px solid var(--border); margin-left: 0; padding-left: 1rem; color: inherit; }
 @media (max-width: 48rem) {
   .layout { flex-direction: column; }
-  .sidebar { width: 100%; flex: none; height: auto; position: static; border-right: 0; border-bottom: 1px solid rgba(127,127,127,.3); }
+  .sidebar { width: 100%; flex: none; height: auto; position: static; border-right: 0; border-bottom: 1px solid var(--border); }
 }
 </style>
 </head>
@@ -102,6 +141,7 @@ blockquote { border-left: 3px solid rgba(127,127,127,.5); margin-left: 0; paddin
   <aside class="sidebar">
     <div class="sidebar-head">
       <a class="brand" href="/">{{.SiteTitle}}</a>
+      <button id="theme-toggle" class="theme-toggle" type="button" aria-label="Toggle theme">Theme</button>
       <input id="search" class="search" type="search" placeholder="Search docs  (/)" autocomplete="off">
       <div id="search-results" class="search-results" hidden></div>
     </div>
