@@ -1,3 +1,6 @@
+{{define "tree"}}{{range .Items}}{{if .IsDir}}<div class="tree-dir" style="padding-left:{{.Indent}}px">{{.Name}}</div>
+{{else}}<a class="tree-file{{if .Active}} active{{end}}" style="padding-left:{{.Indent}}px" href="{{.URL}}">{{.Name}}</a>
+{{end}}{{end}}{{end}}
 {{define "page"}}<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -145,11 +148,7 @@ blockquote { border-left: 3px solid var(--border); margin-left: 0; padding-left:
       <input id="search" class="search" type="search" placeholder="Search docs  (/)" autocomplete="off">
       <div id="search-results" class="search-results" hidden></div>
     </div>
-    <nav class="tree">
-      {{range .Items}}{{if .IsDir}}<div class="tree-dir" style="padding-left:{{.Indent}}px">{{.Name}}</div>
-      {{else}}<a class="tree-file{{if .Active}} active{{end}}" style="padding-left:{{.Indent}}px" href="{{.URL}}">{{.Name}}</a>
-      {{end}}{{end}}
-    </nav>
+    <nav class="tree" id="tree">{{template "tree" .}}</nav>
   </aside>
   <main class="content">
     <article id="content">{{.Body}}</article>

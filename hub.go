@@ -1,15 +1,25 @@
 package main
 
 import (
+	"encoding/json"
 	"log"
 	"net/http"
 	"sync"
+	"time"
 
 	"github.com/gorilla/websocket"
 )
 
 var upgrader = websocket.Upgrader{
 	CheckOrigin: func(r *http.Request) bool { return true },
+}
+
+// changeMsg is broadcast to browsers when a file changes.
+type changeMsg struct {
+	Type string `json:"type"`
+	Path string `json:"path"`
+	Op   string `json:"op"`
+	Tree bool   `json:"tree"`
 }
 
 // hub tracks connected browsers and broadcasts reload messages to them.
@@ -34,11 +44,16 @@ func (h *hub) remove(c *websocket.Conn) {
 	h.mu.Unlock()
 }
 
-func (h *hub) broadcast(msg string) {
+func (h *hub) broadcast(msg changeMsg) {
+	data, err := json.Marshal(msg)
+	if err != nil {
+		return
+	}
 	h.mu.Lock()
 	defer h.mu.Unlock()
 	for c := range h.conns {
-		if err := c.WriteMessage(websocket.TextMessage, []byte(msg)); err != nil {
+		c.SetWriteDeadline(time.Now().Add(5 * time.Second))
+		if err := c.WriteMessage(websocket.TextMessage, data); err != nil {
 			c.Close()
 			delete(h.conns, c)
 		}

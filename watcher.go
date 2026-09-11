@@ -42,16 +42,41 @@ func watch(dir string, h *hub) {
 			if event.Op&(fsnotify.Write|fsnotify.Create|fsnotify.Rename|fsnotify.Remove) == 0 {
 				continue
 			}
-			if strings.EqualFold(filepath.Ext(event.Name), ".md") {
-				log.Printf("changed: %s", event.Name)
-				h.broadcast("reload")
+			if !strings.EqualFold(filepath.Ext(event.Name), ".md") {
+				continue
 			}
+			rel, err := filepath.Rel(dir, event.Name)
+			if err != nil {
+				continue
+			}
+			op := opName(event.Op)
+			log.Printf("changed: %s (%s)", event.Name, op)
+			h.broadcast(changeMsg{
+				Type: "reload",
+				Path: filepath.ToSlash(rel),
+				Op:   op,
+				Tree: op != "write",
+			})
 		case err, ok := <-w.Errors:
 			if !ok {
 				return
 			}
 			log.Println("watch error:", err)
 		}
+	}
+}
+
+// opName returns the first matching fsnotify operation as a string.
+func opName(op fsnotify.Op) string {
+	switch {
+	case op&fsnotify.Create != 0:
+		return "create"
+	case op&fsnotify.Remove != 0:
+		return "remove"
+	case op&fsnotify.Rename != 0:
+		return "rename"
+	default:
+		return "write"
 	}
 }
 

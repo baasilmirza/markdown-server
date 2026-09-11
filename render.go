@@ -50,10 +50,43 @@ func pageScripts() template.HTML {
 const reloadScript = `<script>
 (function () {
   var proto = location.protocol === 'https:' ? 'wss://' : 'ws://';
+
+  function currentRoute() {
+    return decodeURIComponent(location.pathname).replace(/^\/+/, '').replace(/\.md$/i, '');
+  }
+
+  function swap(html) {
+    var el = document.getElementById('content');
+    if (!el) { location.reload(); return; }
+    var y = window.scrollY;
+    el.innerHTML = html;
+    window.scrollTo(0, y);
+  }
+
+  function refreshTree() {
+    fetch('/__tree?route=' + encodeURIComponent(currentRoute()))
+      .then(function (r) { return r.text(); })
+      .then(function (html) {
+        var nav = document.getElementById('tree');
+        if (nav) { nav.innerHTML = html; }
+      })
+      .catch(function () {});
+  }
+
   function connect() {
     var ws = new WebSocket(proto + location.host + '/ws');
     ws.onmessage = function (e) {
-      if (e.data === 'reload') { location.reload(); }
+      var msg;
+      try { msg = JSON.parse(e.data); } catch (err) { location.reload(); return; }
+      if (!msg || msg.type !== 'reload') { return; }
+      if (msg.tree) { refreshTree(); }
+      var changed = (msg.path || '').replace(/\.md$/i, '');
+      if (changed && changed === currentRoute()) {
+        fetch('/__frag?p=' + encodeURIComponent(msg.path))
+          .then(function (r) { if (!r.ok) { throw new Error('frag'); } return r.text(); })
+          .then(swap)
+          .catch(function () { location.reload(); });
+      }
     };
     ws.onclose = function () { setTimeout(connect, 1000); };
   }

@@ -26,12 +26,8 @@ func (s *server) handle(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "forbidden", http.StatusForbidden)
 		return
 	}
-	if filepath.Ext(full) == "" {
-		if _, err := os.Stat(full + ".md"); err == nil {
-			full += ".md"
-		}
-	}
-	if !strings.EqualFold(filepath.Ext(full), ".md") {
+	full, route, ok := s.resolve(rel)
+	if !ok {
 		http.NotFound(w, r)
 		return
 	}
@@ -47,9 +43,29 @@ func (s *server) handle(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	route := strings.TrimSuffix(filepath.ToSlash(rel), filepath.Ext(rel))
 	title := strings.TrimSuffix(filepath.Base(full), ".md")
 	s.render(w, title, route, body)
+}
+
+// resolve maps a request path to an absolute markdown file and its route.
+func (s *server) resolve(rel string) (full, route string, ok bool) {
+	if rel == "" || rel == "." {
+		return "", "", false
+	}
+	full = filepath.Join(s.dir, filepath.FromSlash(rel))
+	if !within(s.dir, full) {
+		return "", "", false
+	}
+	if filepath.Ext(full) == "" {
+		if _, err := os.Stat(full + ".md"); err == nil {
+			full += ".md"
+		}
+	}
+	if !strings.EqualFold(filepath.Ext(full), ".md") {
+		return "", "", false
+	}
+	route = strings.TrimSuffix(filepath.ToSlash(rel), filepath.Ext(rel))
+	return full, route, true
 }
 
 func (s *server) index(w http.ResponseWriter, r *http.Request) {
@@ -115,6 +131,44 @@ func (s *server) render(w http.ResponseWriter, title, route string, body []byte)
 		Next:      next,
 		Scripts:   pageScripts(),
 	})
+}
+
+// handleFrag returns just the rendered content for a document.
+func (s *server) handleFrag(w http.ResponseWriter, r *http.Request) {
+	rel := strings.TrimPrefix(path.Clean("/"+r.URL.Query().Get("p")), "/")
+	full, _, ok := s.resolve(rel)
+	if !ok {
+		writeJSONError(w, http.StatusNotFound, "not found")
+		return
+	}
+	src, err := os.ReadFile(full)
+	if err != nil {
+		writeJSONError(w, http.StatusNotFound, "not found")
+		return
+	}
+	body, err := renderMarkdown(src)
+	if err != nil {
+		writeJSONError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	w.Header().Set("Cache-Control", "no-store")
+	w.Write(body)
+}
+
+// handleTree returns the sidebar tree fragment for a route.
+func (s *server) handleTree(w http.ResponseWriter, r *http.Request) {
+	route := r.URL.Query().Get("route")
+	cat, err := buildCatalog(s.dir)
+	if err != nil {
+		writeJSONError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	w.Header().Set("Cache-Control", "no-store")
+	if err := pageTmpl.ExecuteTemplate(w, "tree", pageData{Items: cat.sidebar(route)}); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
 }
 
 // writeJSONError writes a JSON error payload.
