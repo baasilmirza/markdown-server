@@ -127,6 +127,7 @@ func (s *server) render(w http.ResponseWriter, title, route string, body []byte)
 		Title:     title,
 		SiteTitle: "Markdown Server",
 		Rel:       route + ".md",
+		Dir:       docDir(route),
 		Edit:      s.edit,
 		Items:     items,
 		Body:      template.HTML(body),
@@ -134,6 +135,15 @@ func (s *server) render(w http.ResponseWriter, title, route string, body []byte)
 		Next:      next,
 		Scripts:   pageScripts(),
 	})
+}
+
+// docDir returns the slash directory of a route, or "" for the root.
+func docDir(route string) string {
+	d := path.Dir(route)
+	if d == "." || d == "/" {
+		return ""
+	}
+	return d
 }
 
 // handleFrag returns just the rendered content for a document.

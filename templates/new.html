@@ -1,0 +1,82 @@
+{{define "new"}}<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>New document</title>
+<script>
+(function () {
+  try {
+    var t = localStorage.getItem('theme');
+    if (t !== 'light' && t !== 'dark') {
+      t = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    }
+    document.documentElement.setAttribute('data-theme', t);
+  } catch (e) {}
+})();
+</script>
+<style>
+:root {
+  color-scheme: light;
+  --bg: #ffffff;
+  --fg: #1a1a1a;
+  --muted: rgba(0,0,0,.07);
+  --border: rgba(0,0,0,.16);
+  --hover: rgba(0,0,0,.06);
+}
+html[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #14161a;
+  --fg: #e6e6e6;
+  --muted: rgba(255,255,255,.09);
+  --border: rgba(255,255,255,.18);
+  --hover: rgba(255,255,255,.08);
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--fg);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  line-height: 1.6;
+}
+.wrap { max-width: 40rem; margin: 0 auto; padding: 2rem 1rem; }
+a { color: inherit; }
+form { display: flex; flex-direction: column; gap: .8rem; margin-top: 1rem; }
+input, textarea {
+  width: 100%;
+  padding: .5rem .7rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+}
+textarea { min-height: 16rem; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+button {
+  align-self: flex-start;
+  padding: .4rem 1rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+button:hover { background: var(--hover); }
+.error { color: #d33; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <a href="/">&larr; Back</a>
+  <h1>New document</h1>
+  {{if .Error}}<p class="error">{{.Error}}</p>{{end}}
+  <form method="post" action="/__new">
+    <input name="path" placeholder="guide/new-page.md" required autofocus>
+    <textarea name="content" placeholder="# New page"></textarea>
+    <button type="submit">Create</button>
+  </form>
+</div>
+</body>
+</html>{{end}}

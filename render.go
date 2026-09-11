@@ -27,6 +27,7 @@ type pageData struct {
 	Title     string
 	SiteTitle string
 	Rel       string
+	Dir       string
 	Edit      bool
 	Items     []sidebarItem
 	Body      template.HTML

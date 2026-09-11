@@ -34,6 +34,8 @@ func main() {
 	mux.HandleFunc("/__edit", s.handleEdit)
 	mux.HandleFunc("/__render", s.handleRender)
 	mux.HandleFunc("/__save", s.handleSave)
+	mux.HandleFunc("/__new", s.handleNew)
+	mux.HandleFunc("/__upload", s.handleUpload)
 	mux.HandleFunc("/", s.handle)
 
 	log.Printf("serving %s at http://localhost%s", *dir, *addr)
