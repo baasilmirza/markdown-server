@@ -2,7 +2,9 @@ package main
 
 import (
 	"encoding/json"
+	"errors"
 	"io"
+	"io/fs"
 	"net/http"
 	"os"
 	"path"
@@ -110,14 +112,25 @@ func (s *server) handleSave(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err := os.MkdirAll(filepath.Dir(full), 0o755); err != nil {
-		writeJSONError(w, http.StatusInternalServerError, err.Error())
+		writeJSONError(w, http.StatusInternalServerError, friendlyWriteErr(err))
 		return
 	}
 	if err := writeFileAtomic(full, src); err != nil {
-		writeJSONError(w, http.StatusInternalServerError, err.Error())
+		writeJSONError(w, http.StatusInternalServerError, friendlyWriteErr(err))
 		return
 	}
 	writeJSON(w, map[string]any{"ok": true, "path": route + ".md"})
+}
+
+// friendlyWriteErr turns filesystem write errors into a readable message.
+func friendlyWriteErr(err error) string {
+	if err == nil {
+		return ""
+	}
+	if errors.Is(err, fs.ErrPermission) || strings.Contains(strings.ToLower(err.Error()), "read-only") {
+		return "serve directory is read-only; mount it read-write to enable editing"
+	}
+	return err.Error()
 }
 
 // resolveWrite maps a request path to a writable markdown file, appending .md

@@ -1,6 +1,8 @@
 package main
 
 import (
+	"errors"
+	"io/fs"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -45,6 +47,21 @@ func TestHandleSave(t *testing.T) {
 	}
 	if string(got) != "# hi" {
 		t.Fatalf("content = %q", got)
+	}
+}
+
+func TestFriendlyWriteErr(t *testing.T) {
+	if got := friendlyWriteErr(nil); got != "" {
+		t.Fatalf("nil error = %q, want empty", got)
+	}
+	if got := friendlyWriteErr(fs.ErrPermission); !strings.Contains(got, "read-only") {
+		t.Fatalf("permission error = %q", got)
+	}
+	if got := friendlyWriteErr(errors.New("read-only file system")); !strings.Contains(got, "read-only") {
+		t.Fatalf("read-only error = %q", got)
+	}
+	if got := friendlyWriteErr(errors.New("boom")); got != "boom" {
+		t.Fatalf("other error = %q, want boom", got)
 	}
 }
 

@@ -49,11 +49,11 @@ func (s *server) createNew(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err := os.MkdirAll(filepath.Dir(full), 0o755); err != nil {
-		s.renderNew(w, err.Error())
+		s.renderNew(w, friendlyWriteErr(err))
 		return
 	}
 	if err := writeFileAtomic(full, []byte(content)); err != nil {
-		s.renderNew(w, err.Error())
+		s.renderNew(w, friendlyWriteErr(err))
 		return
 	}
 	http.Redirect(w, r, routeURL(route), http.StatusSeeOther)
@@ -90,6 +90,7 @@ func (s *server) handleUpload(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var saved []string
+	var lastErr error
 	for _, fh := range files {
 		name := filepath.Base(fh.Filename)
 		if name == "" || name == "." || strings.HasPrefix(name, ".") {
@@ -107,23 +108,31 @@ func (s *server) handleUpload(w http.ResponseWriter, r *http.Request) {
 			continue
 		}
 		if err := os.MkdirAll(filepath.Dir(full), 0o755); err != nil {
+			lastErr = err
 			continue
 		}
 		src, err := fh.Open()
 		if err != nil {
+			lastErr = err
 			continue
 		}
 		data, err := io.ReadAll(io.LimitReader(src, maxBody))
 		src.Close()
 		if err != nil {
+			lastErr = err
 			continue
 		}
 		if err := writeFileAtomic(full, data); err != nil {
+			lastErr = err
 			continue
 		}
 		saved = append(saved, route+".md")
 	}
 
+	if len(saved) == 0 && lastErr != nil {
+		writeJSONError(w, http.StatusInternalServerError, friendlyWriteErr(lastErr))
+		return
+	}
 	if strings.Contains(r.Header.Get("Accept"), "application/json") {
 		writeJSON(w, map[string]any{"ok": true, "saved": saved})
 		return
