@@ -8,6 +8,7 @@ RUN CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o /out/markdown-server .
 FROM alpine:3.20
 RUN adduser -D -u 10001 app
 COPY --from=build /out/markdown-server /usr/local/bin/markdown-server
+RUN mkdir -p /docs && chown app:app /docs
 USER app
 WORKDIR /docs
 EXPOSE 8080

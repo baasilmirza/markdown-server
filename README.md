@@ -16,7 +16,16 @@ Edit any file in `./docs`; the page reloads automatically.
 
 ```powershell
 docker build -t markdown-server .
-docker run --rm -p 8080:8080 -v "${PWD}\docs:/docs:ro" markdown-server
+docker run --rm -p 8080:8080 -v "${PWD}\docs:/docs:rw" markdown-server
+```
+
+The mount is read-write so the editor, upload, and new-file routes work.
+On Linux, add `--user "$(id -u):$(id -g)"` so the container can write the
+bind-mounted files. With Compose, set `DOCKER_UID` and `DOCKER_GID`:
+
+```sh
+export DOCKER_UID=$(id -u) DOCKER_GID=$(id -g)
+docker compose up --build
 ```
 
 ## Run with Go

@@ -5,5 +5,8 @@ services:
     ports:
       - "8080:8080"
     volumes:
-      - ./docs:/docs:ro
+      - ./docs:/docs:rw
+    # Match the host user so bind-mounted files stay writable on Linux.
+    # Set DOCKER_UID/DOCKER_GID (see README); Windows falls back to 1000.
+    user: "${DOCKER_UID:-1000}:${DOCKER_GID:-1000}"
     restart: unless-stopped
