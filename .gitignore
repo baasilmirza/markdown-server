@@ -1,0 +1,9 @@
+# binaries
+/markdown-server
+/markdown-server.exe
+*.exe
+
+# personal docs (never commit)
+SPEC.md
+INSTRUCTIONS.md
+docs/*blog*.md

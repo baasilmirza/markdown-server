@@ -1,0 +1,9 @@
+services:
+  markdown-server:
+    build: .
+    image: markdown-server
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./docs:/docs:ro
+    restart: unless-stopped
